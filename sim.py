@@ -1,5 +1,6 @@
 import sys
 import matplotlib
+from matplotlib.colors import Normalize
 import matplotlib.patches
 import numpy as np
 import casadi as cas
@@ -66,7 +67,7 @@ if __name__ == "__main__":
     try:
         plt.ion()
         fig, ax = plt.subplots()
-        while np.linalg.norm(x_ref - state_vector) > 0.05:
+        while np.linalg.norm(x_ref - state_vector) > 0.1:
             lbx = np.zeros(n_controls*N)
             lbx[0::n_controls] = -v_max
             lbx[1::n_controls] = -v_omega_max
@@ -79,8 +80,8 @@ if __name__ == "__main__":
 
             solution = solver(
                 x0=np.zeros(n_controls*N), # Initial guess
-                lbx=-cas.inf, # Lower bound x
-                ubx=cas.inf, # Upper bound x
+                lbx=lbx, # Lower bound x
+                ubx=ubx, # Upper bound x
                 lbg=-cas.inf, # Lower bound g
                 ubg=cas.inf, # Upper bound g
                 p=params # Parameters
@@ -105,7 +106,10 @@ if __name__ == "__main__":
             vv = np.sin(theta)
 
             draw_robot(ax, state_vector.flatten())
-            quiver = plt.quiver(x_pos, y_pos, uu, vv, v, angles='xy', scale_units='xy', scale=10, cmap='viridis')
+            quiver = plt.quiver(x_pos, y_pos, uu, vv, v, angles='xy', scale_units='xy', scale=1, cmap='viridis', norm=Normalize(-v_max, vmax=v_max))
+            cbar = plt.colorbar(quiver)
+            cbar.set_label('Linear Speed')
+
             plt.quiver(x_ref[0], x_ref[1], np.cos(x_ref[2]), np.sin(x_ref[2]), angles='xy', scale_units='xy', scale=10, color='red', label='Target')
 
             ax.legend()
@@ -114,6 +118,7 @@ if __name__ == "__main__":
             ax.set_aspect('equal')
             ax.set_title('Model Simulation')
             plt.pause(dt)
+            cbar.remove()
 
         plt.ioff()
         plt.show()
