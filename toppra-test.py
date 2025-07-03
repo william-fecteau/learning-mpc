@@ -69,7 +69,7 @@ ts_sample = np.arange(0, jnt_traj.duration, dt)
 points = []
 for t in ts_sample:
     q = jnt_traj(t)
-    points.append([q[0], q[1], q[2]])
+    points.append([q[0], q[1], np.atan2(np.sin(q[2]), np.cos(q[2]))])
 
 points = np.array(points)
 np.savetxt("traj.np", points)

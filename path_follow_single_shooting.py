@@ -28,8 +28,8 @@ def create_solver(N, T, Q, R, path):
     # matrix containing all control actions over all time steps (each column is an action vector)
     U = cas.SX.sym('U', n_controls, N) # type: ignore
 
-    # column vector for storing initial state and path
-    P = cas.SX.sym('P', n_states + path.size) # type: ignore
+    # column vector for storing initial state and path. We assume that each waypoint is approximately dt apart.
+    P = cas.SX.sym('P', n_states + (N*n_states)) # type: ignore
 
     # Model
     jacobian = cas.vertcat(
@@ -50,6 +50,7 @@ def create_solver(N, T, Q, R, path):
         point_ref = P[n_states+i*n_states:n_states+i*n_states+n_states]
         point = cas.vertcat(state[0], state[1], state[2])
         state_err = point - point_ref
+        state_err[2] = cas.atan2(cas.sin(state_err[2]), cas.cos(state_err[2]))
 
         # Integration
         X[:, i+1] = state + T*f(state, control)
@@ -88,7 +89,7 @@ if __name__ == "__main__":
     v_max = 0.5
     v_omega_max = 0.5
 
-    N = 100 # Horizon
+    N = 50 # Horizon
     T = 1.0/10.0 # Delta time
     n_controls = 2
     Q = np.diag([1.0, 1.0, 1.0]) # State weighting
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     ubx[0::n_controls] = v_max
     ubx[1::n_controls] = v_omega_max
 
-    params = cas.vertcat(*x_0, *path.flatten())
+    params = cas.vertcat(*x_0, *path[:N].flatten())
 
     solution = solver(
         x0=np.zeros(n_controls*N), # Initial guess
